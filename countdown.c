@@ -3,50 +3,46 @@
 
 typedef void (*fptr) (void);
 
-fptr trampoline, trampoline2;
+fptr trampoline_target, pre_trampoline, post_trampoline;
 
 void trampoline_wrapper(void)
 {
-	trampoline();
-	trampoline();
+	trampoline_target();
+	trampoline_target();
 }
 
-void trampoline_noop(void)
+void countdown(int n);
+
+void init_post_trampoline(int n)
 {
+	post_trampoline = *(fptr *) (&n - 1);
+	trampoline_target = (fptr) countdown;
 }
 
-void trampoline_setter(int n)
+void init_pre_trampoline(int n)
 {
-	trampoline2 = (fptr) ((int *) &n)[-1];
-	trampoline = trampoline_noop;
+	pre_trampoline = *(fptr *) (&n - 1);
+	trampoline_target = (fptr) init_post_trampoline;
 }
 
-void trampoline_init(void)
+void init_trampoline(void)
 {
-	trampoline = (fptr) trampoline_setter;
+	trampoline_target = (fptr) init_pre_trampoline;
 	trampoline_wrapper();
-	trampoline = trampoline2;
 }
 
 void countdown(int n)
 {
-	static int return_address = 0;
-	static fptr my_trampoline;
-	if (return_address == 0)
-	{
-		return_address = ((int *) &n)[-1];
-		my_trampoline = trampoline;
-		trampoline = (fptr) countdown;
-	}
-	((int *) &n)[-1] = (int) my_trampoline;
+	fptr original_return_address;
+	fptr *preturn_address = (fptr *) (&n - 1);
+	if (*preturn_address != post_trampoline)
+		original_return_address = *preturn_address;
 
 	printf("%d\n", n);
 	if (--n <= 0)
-	{
-		((int *) &n)[-1] = return_address;
-		return_address = 0;
-		trampoline = my_trampoline;
-	}
+		*preturn_address = original_return_address;
+	else
+		*preturn_address = pre_trampoline;
 }
 
 int main(int argc, char **argv)
@@ -57,7 +53,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	trampoline_init();
+	init_trampoline();
 	printf("Starting...\n"); 
 	for (argv++; *argv; argv++)
 	{
