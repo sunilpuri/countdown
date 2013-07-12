@@ -28,6 +28,9 @@ This solution makes the following assumptions:
 
 ### Platforms
 
+#### 32-bit Windows
+This solution works on 32-bit Windows when compiled with Visual Studio 2008.
+
 #### 64-bit Windows
 The solution does not work on 64-bit Windows because [its calling convention is different](http://en.wikipedia.org/wiki/X86_calling_conventions#x86-64_calling_conventions). Specifically that convention does not comply with assumptions #2 and #3 and there is no way to configure the compiler otherwise. 
 
